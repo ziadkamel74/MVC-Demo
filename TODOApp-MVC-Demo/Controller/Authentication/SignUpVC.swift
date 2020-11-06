@@ -33,7 +33,7 @@ class SignUpVC: UIViewController {
     
     // MARK:- Private Methodss
     private func isValidData() -> Bool {
-        if let name = nameTextField.text, !name.isEmpty, let email = emailTextField.text, !email.isEmpty, let password = passwordTextField.text, !password.isEmpty, let age = ageTextField.text, !age.isEmpty {
+        if let name = nameTextField.text, !name.isEmpty, let email = emailTextField.text?.trimmed, !email.isEmpty, let password = passwordTextField.text, !password.isEmpty, let age = ageTextField.text, !age.isEmpty {
             
             switch name.isValidName {
             case true: break
@@ -81,16 +81,17 @@ class SignUpVC: UIViewController {
         }
     }
     
-    private func goToTodoListVC() {
+    private func switchToMainState() {
         let todoListVC = TodoListVC.create()
-        navigationController?.pushViewController(todoListVC, animated: true)
+        let navigationController = UINavigationController(rootViewController: todoListVC)
+        AppDelegate.shared().window?.rootViewController = navigationController
     }
     
     // MARK:- IBAction Methods
     @IBAction func registerBtnPressed(_ sender: UIButton) {
         if isValidData() {
             registerUser() {
-                self.goToTodoListVC()
+                self.switchToMainState()
             }
         }
     }

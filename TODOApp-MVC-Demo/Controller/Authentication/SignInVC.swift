@@ -48,18 +48,20 @@ class SignInVC: UIViewController {
                 completion()
             }
         }
+        
     }
     
-    private func goToTodoListVC() {
+    private func switchToMainState() {
         let todoListVC = TodoListVC.create()
-        navigationController?.pushViewController(todoListVC, animated: true)
+        let navigationController = UINavigationController(rootViewController: todoListVC)
+        AppDelegate.shared().window?.rootViewController = navigationController
     }
     
     // MARK:- IBAction Methods
     @IBAction func loginBtnPressed(_ sender: UIButton) {
         if isValidData() {
             login() {
-                self.goToTodoListVC()
+                self.switchToMainState()
             }
         }
     }

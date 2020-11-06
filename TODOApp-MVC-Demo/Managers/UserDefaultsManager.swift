@@ -10,7 +10,7 @@ import Foundation
 
 
 class UserDefaultsManager {
-    
+        
     // MARK:- Singleton
     private static let sharedInstance = UserDefaultsManager()
     

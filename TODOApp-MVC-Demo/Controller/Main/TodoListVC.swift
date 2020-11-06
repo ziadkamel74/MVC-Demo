@@ -20,10 +20,7 @@ class TodoListVC: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        setUpNavBar()
-        
-        tableView.delegate = self
-        tableView.dataSource = self
+        setupViews()
         
         getAllTasks()
     }
@@ -35,7 +32,12 @@ class TodoListVC: UIViewController {
     }
     
     // MARK:- Private Methods
-    private func setUpNavBar() {
+    private func setupViews() {
+        setupNavBar()
+        setupTableView()
+    }
+    
+    private func setupNavBar() {
         navigationItem.title = "Tasks"
         let newTaskButton = UIBarButtonItem(image: UIImage(systemName: "plus"), style: .done, target: self, action: #selector(newTodo))
         newTaskButton.tintColor = .label
@@ -45,26 +47,36 @@ class TodoListVC: UIViewController {
         navigationItem.setHidesBackButton(true, animated: false)
     }
     
+    private func setupTableView() {
+        tableView.delegate = self
+        tableView.dataSource = self
+        tableView.register(TodoCell.nib(), forCellReuseIdentifier: TodoCell.identifier)
+    }
+    
     private func getAllTasks() {
+        self.view.showLoader()
         APIManager.getAllTasks { [weak self] (error, tasksData) in
             if let error = error {
                 self?.showAlert(title: "Error", message: error.localizedDescription)
             } else if let tasksData = tasksData {
-                self?.tasks = tasksData.data
+                self?.tasks = tasksData
                 DispatchQueue.main.async {
                     self?.tableView.reloadData()
                 }
             }
+            self?.view.hideLoader()
         }
     }
     
     private func saveNewTask(with task: TaskData) {
+        self.view.showLoader()
         APIManager.addNewTask(with: task) { [weak self] (succeded) in
             if succeded {
                 self?.getAllTasks()
             } else {
                 self?.showAlert(title: "Connection error", message: "Please try again later")
             }
+            self?.view.hideLoader()
         }
     }
     
@@ -79,7 +91,7 @@ class TodoListVC: UIViewController {
                 self?.showAlert(title: "Can't save task", message: "Please enter task description")
                 return
             }
-            let task = TaskData(description: description)
+            let task = TaskData(description: description, id: nil)
             self?.saveNewTask(with: task)
         }))
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
@@ -87,10 +99,36 @@ class TodoListVC: UIViewController {
     }
     
     @objc private func goToProfileVC() {
-        let profileVC = ProfileVC.create()
-        navigationController?.pushViewController(profileVC, animated: true)
+        let profileTableVC = ProfileTableVC.create()
+        navigationController?.pushViewController(profileTableVC, animated: true)
     }
     
+    @objc private func didTapDeleteTask(_ sender: UIButton) {
+        let hitPoint = sender.convert(CGPoint.zero, to: tableView)
+        guard let indexPath = tableView.indexPathForRow(at: hitPoint) else { return }
+        let alert = UIAlertController(title: "Sorry", message: "Are you sure you want to delete this todo?", preferredStyle: .alert)
+        let noAction = UIAlertAction(title: "No", style: .cancel, handler: nil)
+        let yesAction = UIAlertAction(title: "Yes", style: .destructive) { [weak self] action in
+            guard let taskID = self?.tasks[indexPath.row].id else { return }
+            self?.deleteTask(with: taskID)
+        }
+        
+        alert.addAction(noAction)
+        alert.addAction(yesAction)
+        self.present(alert, animated: true)
+    }
+    
+    private func deleteTask(with id: String) {
+        self.view.showLoader()
+        APIManager.deleteTask(with: id) { [weak self] (deleted) in
+            if deleted {
+                self?.getAllTasks()
+            } else {
+                self?.showAlert(title: "Connection error", message: "Please try again later")
+            }
+            self?.view.hideLoader()
+        }
+    }
 }
 
 // MARK:- TableView DataSource and Delegate
@@ -100,12 +138,19 @@ extension TodoListVC: UITableViewDelegate, UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: Cells.todoCell, for: indexPath)
-        cell.textLabel?.text = tasks[indexPath.row].description
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: TodoCell.identifier, for: indexPath) as? TodoCell else {
+            return UITableViewCell()
+        }
+        cell.configure(description: tasks[indexPath.row].description)
+        cell.deleteButton.addTarget(self, action: #selector(didTapDeleteTask), for: .touchUpInside)
         return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 80
     }
 }

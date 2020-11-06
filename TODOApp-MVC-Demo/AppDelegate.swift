@@ -37,7 +37,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let navigationController = UINavigationController(rootViewController: signInVC)
         self.window?.rootViewController = navigationController
     }
-
 }
 
 extension AppDelegate {

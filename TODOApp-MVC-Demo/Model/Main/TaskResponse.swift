@@ -1,5 +1,5 @@
 //
-//  Task.swift
+//  TaskResponse.swift
 //  TODOApp-MVC-Demo
 //
 //  Created by Ziad on 10/31/20.
@@ -8,6 +8,6 @@
 
 import Foundation
 
-struct TaskData: Codable {
-    let description: String
+struct TaskResponse: Codable {
+    let data: [TaskData]
 }

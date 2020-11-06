@@ -10,6 +10,8 @@ import Foundation
 import Alamofire
 
 class APIManager {
+    
+    /// Log user in with email and password
     class func login(with email: String, password: String, completion: @escaping (_ error: Error?, _ loginData: LoginResponse?) -> Void) {
         
         let headers: HTTPHeaders = [HeaderKeys.contentType: HeaderValues.appJSON]
@@ -40,6 +42,7 @@ class APIManager {
         }
     }
     
+    /// Register new user to the database
     class func register(with user: UserData, completion: @escaping (_ error: Error?, _ loginData: LoginResponse?) -> Void) {
         let headers: HTTPHeaders = [HeaderKeys.contentType: HeaderValues.appJSON]
         let params: [String: Any] = [ParameterKeys.name: user.name,
@@ -67,6 +70,7 @@ class APIManager {
         }
     }
     
+    /// Adding new task to the database
     class func addNewTask(with task: TaskData, completion: @escaping (_ success: Bool) -> Void) {
         guard let token = UserDefaultsManager.shared().token else { return }
         let headers: HTTPHeaders = [HeaderKeys.authorization: HeaderValues.bearer + token,
@@ -87,7 +91,8 @@ class APIManager {
         }
     }
     
-    class func getAllTasks(completion: @escaping (_ error: Error?, _ tasksResponse: TaskResponse?) -> Void) {
+    /// Loading all tasks associated with authenticated user from database
+    class func getAllTasks(completion: @escaping (_ error: Error?, _ tasksData: [TaskData]?) -> Void) {
         guard let token = UserDefaultsManager.shared().token else { return }
         let headers: HTTPHeaders = [HeaderKeys.authorization: HeaderValues.bearer + token,
                                     HeaderKeys.contentType: HeaderValues.appJSON]
@@ -104,7 +109,7 @@ class APIManager {
             
             do {
                 let decoder = JSONDecoder()
-                let tasksData = try decoder.decode(TaskResponse.self, from: data)
+                let tasksData = try decoder.decode(TaskResponse.self, from: data).data
                 completion(nil, tasksData)
             } catch {
                 completion(error, nil)
@@ -112,6 +117,7 @@ class APIManager {
         }
     }
     
+    /// Loading authenticated user info from the database
     class func getUserData(completion: @escaping (_ error: Error?, _ userData: UserData?) -> Void) {
         guard let token = UserDefaultsManager.shared().token else { return }
         
@@ -140,7 +146,8 @@ class APIManager {
         }
     }
     
-    class func logOut(completion: @escaping (_ success: Bool) -> Void) {
+    /// Logging current user out from database
+    class func logOut(completion: @escaping (_ success: Bool, _ error: Error?) -> Void) {
         guard let token = UserDefaultsManager.shared().token else { return }
         
         let headers: HTTPHeaders = [HeaderKeys.authorization: HeaderValues.bearer + token,
@@ -148,11 +155,109 @@ class APIManager {
         
         AF.request(URLs.logout, method: HTTPMethod.post, parameters: nil, encoding: URLEncoding.default, headers: headers).response { response in
             guard response.error == nil else {
-                print(response.error!.localizedDescription)
+                completion(false, response.error)
+                return
+            }
+            completion(true, nil)
+        }
+    }
+    
+    /// Deleting task associated with authenticated user  from the database by task id
+    class func deleteTask(with id: String, completion: @escaping (_ success: Bool) -> Void) {
+        guard let token = UserDefaultsManager.shared().token else { return }
+        
+        let headers: HTTPHeaders = [HeaderKeys.authorization: HeaderValues.bearer + token, HeaderKeys.contentType: HeaderValues.appJSON]
+        
+        AF.request(URLs.baseTask + "/\(id)", method: HTTPMethod.delete, parameters: nil, encoding: URLEncoding.default, headers: headers).response { response in
+            guard response.error == nil else {
                 completion(false)
                 return
             }
             completion(true)
         }
     }
+    
+    /// Upload image by authenticated user
+    class func uploadImage(with imageData: Data, completion: @escaping (_ success: Bool) -> Void) {
+        guard let token = UserDefaultsManager.shared().token else { return }
+        
+        let headers: HTTPHeaders = [HeaderKeys.authorization: HeaderValues.bearer + token]
+        
+        AF.upload(multipartFormData: { (formData) in
+            formData.append(imageData, withName: ParameterKeys.avatar, fileName: FormData.fileName, mimeType: FormData.mimeType)
+        }, to: URLs.userAvatar, method: .post, headers: headers).response { response in
+            guard response.error == nil else {
+                completion(false)
+                return
+            }
+            completion(true)
+        }
+        
+    }
+    
+    /// Get user image that has been uploaded
+    class func getUserImage(with id: String, completion: @escaping (_ data: Data?, _ error: Error?) -> Void) {
+        let userID = id + "/\(ParameterKeys.avatar)"
+        
+        AF.request(URLs.baseAuth + "/\(userID)", method: HTTPMethod.get, parameters: nil, encoding: URLEncoding.default, headers: nil).response { response in
+            
+            guard response.error == nil else {
+                completion(nil, response.error)
+                return
+            }
+            completion(response.data, nil)
+        }
+    }
+    
+    /// Delete user image from the database
+    class func deleteUserImage(completion: @escaping (_ success: Bool) -> Void) {
+        guard let token = UserDefaultsManager.shared().token else { return }
+        let headers: HTTPHeaders = [HeaderKeys.authorization: HeaderValues.bearer + token]
+        AF.request(URLs.userAvatar, method: .delete, parameters: nil, encoding: URLEncoding.default, headers: headers).response { response in
+            guard response.error == nil else {
+                completion(false)
+                return
+            }
+            completion(true)
+        }
+    }
+    
+    /// Delete and remove user from the database
+    class func deleteUser(completion: @escaping (_ success: Bool) -> Void) {
+        guard let token = UserDefaultsManager.shared().token else { return }
+        let headers: HTTPHeaders = [HeaderKeys.authorization: HeaderValues.bearer + token]
+        
+        AF.request(URLs.userData, method: .delete, encoding: URLEncoding.default, headers: headers).response { response in
+            guard response.error == nil, response.data != nil else {
+                completion(false)
+                return
+            }
+            completion(true)
+        }
+    }
+    
+    /// Update logged in user profile and save it to database
+    class func updateUserProfile(name: String?, age: Int?, email: String?, completion: @escaping (_ success: Bool, _ error: Error?) -> Void) {
+        guard let token = UserDefaultsManager.shared().token else { return }
+        let headers: HTTPHeaders = [HeaderKeys.contentType: HeaderValues.appJSON, HeaderKeys.authorization: HeaderValues.bearer + token]
+        var params: [String: Any] = [:]
+        if let name = name {
+            params[ParameterKeys.name] = name
+        }
+        if let age = age {
+            params[ParameterKeys.age] = age
+        }
+        if let email = email {
+            params[ParameterKeys.email] = email
+        }
+        
+        AF.request(URLs.userData, method: .put, parameters: params, encoding: JSONEncoding.default, headers: headers).response { response in
+            guard response.error == nil, response.data != nil else {
+                completion(false, response.error)
+                return
+            }
+            completion(true, nil)
+        }
+    }
+    
 }

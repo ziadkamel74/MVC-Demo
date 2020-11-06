@@ -21,6 +21,7 @@ struct ViewControllers {
     static let signInVC = "SignInVC"
     static let todoListVC = "TodoListVC"
     static let profileVC = "ProfileVC"
+    static let profileTableVC = "ProfileTableVC"
 }
 
 // Urls
@@ -31,6 +32,7 @@ struct URLs {
     static let logout = baseAuth + "/logout"
     static let userData = baseAuth + "/me"
     static let baseTask = "https://api-nodejs-todolist.herokuapp.com/task"
+    static let userAvatar = "https://api-nodejs-todolist.herokuapp.com/user/me/avatar"
 }
 
 // Header Keys
@@ -52,14 +54,17 @@ struct ParameterKeys {
     static let password = "password"
     static let age = "age"
     static let description = "description"
+    static let avatar = "avatar"
+}
+
+// FormData
+struct FormData {
+    static let name = "avatar"
+    static let fileName = "/home/ali/Mine/c/nodejs-blog/public/img/blog-header.jpg"
+    static let mimeType = "blog-header.jpg"
 }
 
 // UserDefaultsKeys
 struct UserDefaultsKeys {
     static let token = "UDKToken"
-}
-
-struct Cells {
-    static let todoCell = "TodoCell"
-    static let profileCell = "ProfileCell"
 }
