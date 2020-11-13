@@ -19,6 +19,7 @@ class SignInVC: UIViewController {
         super.viewDidLoad()
     }
     
+    // MARK:- UIKit Methods
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         view.endEditing(true)
     }
@@ -27,34 +28,6 @@ class SignInVC: UIViewController {
     class func create() -> SignInVC {
         let signInVC: SignInVC = UIViewController.create(storyboardName: Storyboards.authentication, identifier: ViewControllers.signInVC)
         return signInVC
-    }
-    
-    // MARK:- Private Methods
-    private func isValidData() -> Bool {
-        if let email = emailTextField.text, !email.isEmpty, let password = passwordTextField.text, !password.isEmpty {
-            return true
-        }
-        showAlert(title: "Missed data", message: "Please enter all textfields above")
-        return false
-    }
-    
-    private func login(completion: @escaping () -> Void) {
-        APIManager.login(with: emailTextField.text!, password: passwordTextField.text!) { [weak self] (error, loginData) in
-            if let error = error {
-                print(error.localizedDescription)
-                self?.showAlert(title: "Can't log in", message: "Wrong email or password")
-            } else if let loginData = loginData {
-                UserDefaultsManager.shared().token = loginData.token
-                completion()
-            }
-        }
-        
-    }
-    
-    private func switchToMainState() {
-        let todoListVC = TodoListVC.create()
-        let navigationController = UINavigationController(rootViewController: todoListVC)
-        AppDelegate.shared().window?.rootViewController = navigationController
     }
     
     // MARK:- IBAction Methods
@@ -72,3 +45,34 @@ class SignInVC: UIViewController {
     }
 }
 
+extension SignInVC {
+    // MARK:- Private Methods
+    private func isValidData() -> Bool {
+        if let email = emailTextField.text, !email.isEmpty, let password = passwordTextField.text, !password.isEmpty {
+            return true
+        }
+        showAlert(title: "Missed data", message: "Please enter all textfields above")
+        return false
+    }
+    
+    private func login(completion: @escaping () -> Void) {
+        self.view.showLoader()
+        let user = UserData(email: emailTextField.text, password: passwordTextField.text)
+        APIManager.login(with: user) { [weak self] (response) in
+            switch response {
+            case .failure(let error):
+                self?.showAlert(title: "Can't log in", message: error.localizedDescription)
+            case .success(let result):
+                UserDefaultsManager.shared().token = result.token
+                completion()
+            }
+            self?.view.hideLoader()
+        }
+    }
+    
+    private func switchToMainState() {
+        let toDoListVC = ToDoListVC.create()
+        let navigationController = UINavigationController(rootViewController: toDoListVC)
+        AppDelegate.shared().window?.rootViewController = navigationController
+    }
+}

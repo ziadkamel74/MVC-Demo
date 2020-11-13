@@ -17,6 +17,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 
         if UserDefaultsManager.shared().token != nil {
+            print(UserDefaultsManager.shared().token)
             switchToMainState()
         } else {
             switchToAuthState()
@@ -27,8 +28,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     
     func switchToMainState() {
-        let todoListVC = TodoListVC.create()
-        let navigationController = UINavigationController(rootViewController: todoListVC)
+        let toDoListVC = ToDoListVC.create()
+        let navigationController = UINavigationController(rootViewController: toDoListVC)
         self.window?.rootViewController = navigationController
     }
     

@@ -21,6 +21,7 @@ class SignUpVC: UIViewController {
         super.viewDidLoad()
     }
     
+    // MARK:- UIKit Methods
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         view.endEditing(true)
     }    
@@ -31,6 +32,17 @@ class SignUpVC: UIViewController {
         return signUpVC
     }
     
+    // MARK:- IBAction Methods
+    @IBAction func registerBtnPressed(_ sender: UIButton) {
+        if isValidData() {
+            registerUser() {
+                self.switchToMainState()
+            }
+        }
+    }
+}
+
+extension SignUpVC {
     // MARK:- Private Methodss
     private func isValidData() -> Bool {
         if let name = nameTextField.text, !name.isEmpty, let email = emailTextField.text?.trimmed, !email.isEmpty, let password = passwordTextField.text, !password.isEmpty, let age = ageTextField.text, !age.isEmpty {
@@ -70,29 +82,23 @@ class SignUpVC: UIViewController {
     }
     
     private func registerUser(completion: @escaping () -> Void) {
-        let user = UserData(name: nameTextField.text!, email: emailTextField.text!, age: Int(ageTextField.text!)!, password: passwordTextField.text!)
-        APIManager.register(with: user) { [weak self] (error, loginData) in
-            if let error = error {
+        self.view.showLoader()
+        let user = UserData(name: nameTextField.text, email: emailTextField.text, password: passwordTextField.text, age: Int(ageTextField.text!))
+        APIManager.register(with: user) { [weak self] (response) in
+            switch response {
+            case .failure(let error):
                 self?.showAlert(title: "Can't sign up", message: error.localizedDescription)
-            } else if let loginData = loginData {
-                UserDefaultsManager.shared().token = loginData.token
+            case .success(let response):
+                UserDefaultsManager.shared().token = response.token
                 completion()
             }
+            self?.view.hideLoader()
         }
     }
     
     private func switchToMainState() {
-        let todoListVC = TodoListVC.create()
-        let navigationController = UINavigationController(rootViewController: todoListVC)
+        let toDoListVC = ToDoListVC.create()
+        let navigationController = UINavigationController(rootViewController: toDoListVC)
         AppDelegate.shared().window?.rootViewController = navigationController
-    }
-    
-    // MARK:- IBAction Methods
-    @IBAction func registerBtnPressed(_ sender: UIButton) {
-        if isValidData() {
-            registerUser() {
-                self.switchToMainState()
-            }
-        }
     }
 }

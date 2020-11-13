@@ -11,16 +11,10 @@ import Foundation
 struct UserData: Codable {
     
     var id: String?
-    var name, email: String
+    var name: String?
+    var email: String?
     var password: String?
-    var age: Int
-    
-    init(name: String, email: String, age: Int, password: String) {
-        self.name = name
-        self.email = email
-        self.age = age
-        self.password = password
-    }
+    var age: Int?
     
     enum CodingKeys: String, CodingKey {
         case age, name, email, password

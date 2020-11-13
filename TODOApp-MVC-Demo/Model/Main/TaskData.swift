@@ -12,11 +12,6 @@ struct TaskData: Codable {
     let description: String
     let id: String?
     
-    init(description: String, id: String?) {
-        self.description = description
-        self.id = id
-    }
-    
     enum CodingKeys: String, CodingKey {
         case description
         case id = "_id"

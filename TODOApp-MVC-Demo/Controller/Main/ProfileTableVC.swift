@@ -51,22 +51,25 @@ extension ProfileTableVC {
     
     private func getUserData() {
         self.view.showLoader()
-        APIManager.getUserData { [weak self] (error, userData) in
-            if let error = error {
+        APIManager.getUserData { [weak self] (response) in
+            switch response {
+            case .failure(let error):
                 self?.showAlert(title: "Error", message: error.localizedDescription)
-            } else if let userData = userData, let userID = userData.id {
+            case .success(let userData):
                 self?.showUserInfo(with: userData)
-                self?.getUserImage(with: userID)
-                
+                guard let id = userData.id else { return }
+                self?.getUserImage(with: id)
             }
             self?.view.hideLoader()
         }
     }
     
     private func showUserInfo(with userData: UserData) {
-        configureImageLabel(with: userData.name)
+        guard let userName = userData.name,
+            let userAge = userData.age else { return }
+        configureImageLabel(with: userName)
         nameLabel.text = userData.name
-        ageLabel.text = String(userData.age)
+        ageLabel.text = String(userAge)
         emailLabel.text = userData.email
     }
     
@@ -78,12 +81,15 @@ extension ProfileTableVC {
     
     private func getUserImage(with id: String) {
         self.view.showLoader()
-        APIManager.getUserImage(with: id) { [weak self] (data, error) in
-            if let data = data, let image = UIImage(data: data) {
-                self?.imageLabel.isHidden = true
-                self?.userImageBtn.setImage(image, for: .normal)
-            } else {
+        APIManager.getUserImage(with: id) { [weak self] (response) in
+            switch response {
+            case .failure:
                 self?.imageLabel.isHidden = false
+            case .success(let data):
+                if let image = UIImage(data: data) {
+                    self?.imageLabel.isHidden = true
+                    self?.userImageBtn.setImage(image, for: .normal)
+                }
             }
             self?.view.hideLoader()
         }
@@ -130,14 +136,14 @@ extension ProfileTableVC {
         let validName: String? = nameToUpdate(name)
         let validEmail: String? = emailToUpdate(email)
         let validAge: Int? = ageToUpdate(age)
+        let user = UserData(name: validName, email: validEmail, age: validAge)
         
         self.view.showLoader()
-        APIManager.updateUserProfile(name: validName, age: validAge, email: validEmail) { [weak self] (updated, error) in
-            
-            if updated, error == nil {
+        APIManager.updateUserProfile(user) { [weak self] (updated) in
+            if updated {
                 self?.getUserData()
-            } else if let error = error {
-                self?.showAlert(title: "Error", message: error.localizedDescription)
+            } else {
+                self?.showAlert(title: "Connection error", message: "Please try again later")
             }
             self?.view.hideLoader()
         }
@@ -189,12 +195,12 @@ extension ProfileTableVC {
     
     private func logOut() {
         self.view.showLoader()
-        APIManager.logOut { [weak self] (logedOut, error) in
-            if logedOut {
+        APIManager.logOut { [weak self] (loggedOut) in
+            if loggedOut {
                 UserDefaultsManager.shared().token = nil
                 self?.switchToAuthState()
-            } else if let error = error {
-                self?.showAlert(title: "Error", message: error.localizedDescription)
+            } else {
+                self?.showAlert(title: "Connection error", message: "Please try again later")
             }
             self?.view.hideLoader()
         }

@@ -19,20 +19,20 @@ struct Storyboards {
 struct ViewControllers {
     static let signUpVC = "SignUpVC"
     static let signInVC = "SignInVC"
-    static let todoListVC = "TodoListVC"
+    static let toDoListVC = "ToDoListVC"
     static let profileVC = "ProfileVC"
     static let profileTableVC = "ProfileTableVC"
 }
 
 // Urls
 struct URLs {
-    static let baseAuth = "https://api-nodejs-todolist.herokuapp.com/user"
-    static let login = baseAuth + "/login"
-    static let register = baseAuth + "/register"
-    static let logout = baseAuth + "/logout"
-    static let userData = baseAuth + "/me"
-    static let baseTask = "https://api-nodejs-todolist.herokuapp.com/task"
-    static let userAvatar = "https://api-nodejs-todolist.herokuapp.com/user/me/avatar"
+    static let base = "https://api-nodejs-todolist.herokuapp.com"
+    static let login = base + "/user/login"
+    static let register = base + "/user/register"
+    static let logout = base + "/user/logout"
+    static let userData = base + "/user/me"
+    static let baseTask = base + "/task"
+    static let userAvatar = base + "/user/me/avatar"
 }
 
 // Header Keys
@@ -67,4 +67,9 @@ struct FormData {
 // UserDefaultsKeys
 struct UserDefaultsKeys {
     static let token = "UDKToken"
+}
+
+// Cells
+struct Cells {
+    static let toDoCell = "ToDoCell"
 }

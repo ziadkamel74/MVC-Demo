@@ -8,7 +8,7 @@
 
 import UIKit
 
-class TodoListVC: UIViewController {
+class ToDoListVC: UIViewController {
     
     // MARK:- Outlets
     @IBOutlet weak var tableView: UITableView!
@@ -19,18 +19,18 @@ class TodoListVC: UIViewController {
     // MARK:- Lifecycle Methods
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         setupViews()
-        
         getAllTasks()
     }
 
     // MARK:- Public Methods
-    class func create() -> TodoListVC {
-        let todoListVC: TodoListVC = UIViewController.create(storyboardName: Storyboards.main, identifier: ViewControllers.todoListVC)
-        return todoListVC
+    class func create() -> ToDoListVC {
+        let toDoListVC: ToDoListVC = UIViewController.create(storyboardName: Storyboards.main, identifier: ViewControllers.toDoListVC)
+        return toDoListVC
     }
-    
+}
+
+extension ToDoListVC {
     // MARK:- Private Methods
     private func setupViews() {
         setupNavBar()
@@ -50,16 +50,28 @@ class TodoListVC: UIViewController {
     private func setupTableView() {
         tableView.delegate = self
         tableView.dataSource = self
-        tableView.register(TodoCell.nib(), forCellReuseIdentifier: TodoCell.identifier)
+        tableView.register(UINib(nibName: Cells.toDoCell, bundle: nil), forCellReuseIdentifier: Cells.toDoCell)
     }
     
     private func getAllTasks() {
         self.view.showLoader()
-        APIManager.getAllTasks { [weak self] (error, tasksData) in
-            if let error = error {
+//        APIManager.getAllTasks { [weak self] (error, tasksData) in
+//            if let error = error {
+//                self?.showAlert(title: "Error", message: error.localizedDescription)
+//            } else if let tasksData = tasksData {
+//                self?.tasks = tasksData
+//                DispatchQueue.main.async {
+//                    self?.tableView.reloadData()
+//                }
+//            }
+//            self?.view.hideLoader()
+//        }
+        APIManager.getAllTasks { [weak self] (response) in
+            switch response {
+            case .failure(let error):
                 self?.showAlert(title: "Error", message: error.localizedDescription)
-            } else if let tasksData = tasksData {
-                self?.tasks = tasksData
+            case .success(let tasks):
+                self?.tasks = tasks.data
                 DispatchQueue.main.async {
                     self?.tableView.reloadData()
                 }
@@ -70,8 +82,20 @@ class TodoListVC: UIViewController {
     
     private func saveNewTask(with task: TaskData) {
         self.view.showLoader()
-        APIManager.addNewTask(with: task) { [weak self] (succeded) in
-            if succeded {
+        APIManager.addNewTask(with: task) { [weak self] (succeeded) in
+            if succeeded {
+                self?.getAllTasks()
+            } else {
+                self?.showAlert(title: "Connection error", message: "Please try again later")
+            }
+            self?.view.hideLoader()
+        }
+    }
+    
+    private func deleteTask(with id: String) {
+        self.view.showLoader()
+        APIManager.deleteTask(with: id) { [weak self] (deleted) in
+            if deleted {
                 self?.getAllTasks()
             } else {
                 self?.showAlert(title: "Connection error", message: "Please try again later")
@@ -117,28 +141,16 @@ class TodoListVC: UIViewController {
         alert.addAction(yesAction)
         self.present(alert, animated: true)
     }
-    
-    private func deleteTask(with id: String) {
-        self.view.showLoader()
-        APIManager.deleteTask(with: id) { [weak self] (deleted) in
-            if deleted {
-                self?.getAllTasks()
-            } else {
-                self?.showAlert(title: "Connection error", message: "Please try again later")
-            }
-            self?.view.hideLoader()
-        }
-    }
 }
 
 // MARK:- TableView DataSource and Delegate
-extension TodoListVC: UITableViewDelegate, UITableViewDataSource {
+extension ToDoListVC: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return tasks.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: TodoCell.identifier, for: indexPath) as? TodoCell else {
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: Cells.toDoCell, for: indexPath) as? ToDoCell else {
             return UITableViewCell()
         }
         cell.configure(description: tasks[indexPath.row].description)
